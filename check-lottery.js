@@ -6,9 +6,7 @@ const client = twilio(
   process.env.TWILIO_SID,
   process.env.TWILIO_AUTH
 );
-
-// Replace with your WhatsApp number
-const TO_WHATSAPP = process.env.TO_WHATSAPP;
+const TO_WHATSAPP = "whatsapp:+94XXXXXXXXX"; // replace with your number
 
 // Track if alert has been sent today
 let alertSentDate = null;
@@ -20,17 +18,23 @@ function getSriLankaDateTime() {
   );
 }
 
+// Get the date to check
 function getTodaySL() {
+  // If TEST_DATE is set, use it (format: YYYY-MM-DD)
+  if (process.env.TEST_DATE) return process.env.TEST_DATE;
   return getSriLankaDateTime().toISOString().slice(0, 10);
 }
 
+// Check if current SL time is after 10:30 PM (ignore if testing)
 function isAfter1030PM() {
+  if (process.env.TEST_DATE) return true; // skip time check in test mode
   const now = getSriLankaDateTime();
   const hour = now.getHours();
   const minute = now.getMinutes();
   return hour > 22 || (hour === 22 && minute >= 30);
 }
 
+// Build PDF URL
 function buildPdfUrl(date) {
   const ymd = date.replace(/-/g, "");
   const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(date).getDay()];
@@ -69,7 +73,7 @@ async function checkLottery() {
     await client.messages.create({
       from: "whatsapp:+14155238886",
       to: TO_WHATSAPP,
-      body: `🎉 Sri Lanka Lottery PDF is now available!\n\n📅 Date: ${today}\n🔗 ${pdfUrl}`,
+      body: `🎉 Lottery PDF is now available!\n\n📅 Date: ${today}\n🔗 ${pdfUrl}`,
     });
 
     alertSentDate = today;
@@ -82,3 +86,4 @@ async function checkLottery() {
 
 // ---------------- RUN ----------------
 checkLottery();
+
