@@ -2,8 +2,14 @@ name: Lottery PDF Check
 
 on:
   schedule:
+    # Every 10 minutes UTC from 17:00 to 23:00 UTC (10:30 PM to 4:30 AM SL)
     - cron: "*/10 17-23 * * *"
   workflow_dispatch:
+    inputs:
+      test_date:
+        description: 'Test date in YYYY-MM-DD format (optional)'
+        required: false
+        default: ''
 
 jobs:
   check:
@@ -17,7 +23,14 @@ jobs:
 
       - run: npm install axios twilio
 
-      - run: node check-lottery.js
+      - run: |
+          echo "Running lottery PDF check"
+          if [ "${{ github.event.inputs.test_date }}" != "" ]; then
+            echo "Using test date: ${{ github.event.inputs.test_date }}"
+            export TEST_DATE="${{ github.event.inputs.test_date }}"
+          fi
+          node check-lottery.js
         env:
           TWILIO_SID: ${{ secrets.TWILIO_SID }}
           TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
+          TO_WHATSAPP: ${{ secrets.TO_WHATSAPP }}
