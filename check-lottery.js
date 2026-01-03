@@ -1,5 +1,5 @@
-import axios from "axios";
-import twilio from "twilio";
+const axios = require("axios");
+const twilio = require("twilio");
 
 const client = twilio(
   process.env.TWILIO_SID,
@@ -16,12 +16,12 @@ async function run() {
     await axios.head(url);
     await client.messages.create({
       from: "whatsapp:+14155238886",
-      to: "whatsapp:+94XXXXXXXXX", // ← replace with YOUR number
+      to: "whatsapp:+94XXXXXXXXX", // replace with your number
       body: `🎉 Lottery PDF available!\n${url}`
     });
-    console.log("Alert sent");
+    console.log("📲 WhatsApp alert sent");
   } catch {
-    console.log("PDF not available yet");
+    console.log("⏳ PDF not available yet");
   }
 }
 
