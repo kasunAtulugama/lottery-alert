@@ -1,28 +1,84 @@
 const axios = require("axios");
 const twilio = require("twilio");
 
+// ---------------- CONFIG ----------------
 const client = twilio(
   process.env.TWILIO_SID,
   process.env.TWILIO_AUTH
 );
 
-const today = new Date();
-const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+// Replace with your WhatsApp number
+const TO_WHATSAPP = process.env.TO_WHATSAPP;
 
-const url = `https://lklottery.com/api/lklottery/lklottery_pdf_files/lklottery_results_Sinhala_${dateStr}.pdf`;
+// Track if alert has been sent today
+let alertSentDate = null;
 
-async function run() {
+// ---------------- HELPERS ----------------
+function getSriLankaDateTime() {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Colombo" })
+  );
+}
+
+function getTodaySL() {
+  return getSriLankaDateTime().toISOString().slice(0, 10);
+}
+
+function isAfter1030PM() {
+  const now = getSriLankaDateTime();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  return hour > 22 || (hour === 22 && minute >= 30);
+}
+
+function buildPdfUrl(date) {
+  const ymd = date.replace(/-/g, "");
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(date).getDay()];
+  return `https://lklottery.com/api/lklottery/lklottery_pdf_files/lklottery_results_Sinhala_${ymd}_${weekday}.pdf`;
+}
+
+// ---------------- MAIN ----------------
+async function checkLottery() {
   try {
-    await axios.head(url);
+    const today = getTodaySL();
+
+    // Reset daily
+    if (alertSentDate !== today) alertSentDate = null;
+
+    if (!isAfter1030PM()) {
+      console.log("⏳ Before 10:30 PM SL — skipping check");
+      return;
+    }
+
+    if (alertSentDate === today) {
+      console.log("✅ Alert already sent today");
+      return;
+    }
+
+    const pdfUrl = buildPdfUrl(today);
+    console.log(`🔍 Checking PDF for ${today}`);
+    console.log(`🔗 ${pdfUrl}`);
+
+    const res = await axios.head(pdfUrl).catch(() => null);
+
+    if (!res || res.status !== 200) {
+      console.log("⏳ PDF not available yet");
+      return;
+    }
+
     await client.messages.create({
       from: "whatsapp:+14155238886",
-      to: "whatsapp:+94XXXXXXXXX", // replace with your number
-      body: `🎉 Lottery PDF available!\n${url}`
+      to: TO_WHATSAPP,
+      body: `🎉 Sri Lanka Lottery PDF is now available!\n\n📅 Date: ${today}\n🔗 ${pdfUrl}`,
     });
+
+    alertSentDate = today;
     console.log("📲 WhatsApp alert sent");
-  } catch {
-    console.log("⏳ PDF not available yet");
+
+  } catch (err) {
+    console.error("❌ Error:", err.message);
   }
 }
 
-run();
+// ---------------- RUN ----------------
+checkLottery();
