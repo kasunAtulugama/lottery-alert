@@ -6,7 +6,7 @@ const client = twilio(
   process.env.TWILIO_SID,
   process.env.TWILIO_AUTH
 );
-const TO_WHATSAPP = "whatsapp:+94XXXXXXXXX"; // replace with your number
+const TO_WHATSAPP = process.env.TO_WHATSAPP; // replace with your number
 
 // Track if alert has been sent today
 let alertSentDate = null;
