@@ -1,0 +1,23 @@
+name: Lottery PDF Check
+
+on:
+  schedule:
+    - cron: "*/10 17-23 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm install axios twilio
+
+      - run: node check-lottery.js
+        env:
+          TWILIO_SID: ${{ secrets.TWILIO_SID }}
+          TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
